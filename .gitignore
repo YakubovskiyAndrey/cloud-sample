@@ -35,3 +35,15 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### Kubernetes Secrets - НІКОЛИ не комітити реальні паролі! ###
+# Шаблон db-secrets.yml дозволений (містить плейсхолдери)
+# Файли з реальними паролями ігноруються
+*.secret.yml
+*-secret.yml
+secrets-real/
+
+### Environment files ###
+.env
+.env.local
+*.env

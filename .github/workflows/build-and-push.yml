@@ -1,0 +1,165 @@
+name: Build and Push Docker Images
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'AuthMicroservice/**'
+      - 'UserMicroservice/**'
+      - 'ConfigServer/**'
+  workflow_dispatch:
+    inputs:
+      service:
+        description: 'Service to build (auth, user, config-server, all)'
+        required: true
+        default: 'all'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ${{ github.repository_owner }}
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      auth: ${{ steps.changes.outputs.auth }}
+      user: ${{ steps.changes.outputs.user }}
+      config: ${{ steps.changes.outputs.config }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Detect changed services
+        id: changes
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            case "${{ github.event.inputs.service }}" in
+              all)
+                echo "auth=true" >> $GITHUB_OUTPUT
+                echo "user=true" >> $GITHUB_OUTPUT
+                echo "config=true" >> $GITHUB_OUTPUT
+                ;;
+              auth) echo "auth=true" >> $GITHUB_OUTPUT ;;
+              user) echo "user=true" >> $GITHUB_OUTPUT ;;
+              config-server) echo "config=true" >> $GITHUB_OUTPUT ;;
+            esac
+          else
+            # Detect from changed files
+            git diff --name-only HEAD~1 HEAD > changed_files.txt || echo "" > changed_files.txt
+            grep -q "AuthMicroservice" changed_files.txt && echo "auth=true" >> $GITHUB_OUTPUT || true
+            grep -q "UserMicroservice" changed_files.txt && echo "user=true" >> $GITHUB_OUTPUT || true
+            grep -q "ConfigServer" changed_files.txt && echo "config=true" >> $GITHUB_OUTPUT || true
+          fi
+
+  build-auth:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.auth == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'corretto'
+
+      - name: Build with Gradle
+        run: |
+          cd AuthMicroservice
+          chmod +x ../gradlew
+          ../gradlew build -x test
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./AuthMicroservice
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/auth-service:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/auth-service:latest
+
+  build-user:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.user == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'corretto'
+
+      - name: Build with Gradle
+        run: |
+          cd UserMicroservice
+          chmod +x ../gradlew
+          ../gradlew build -x test
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./UserMicroservice
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/user-service:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/user-service:latest
+
+  build-config-server:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.config == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'corretto'
+
+      - name: Build with Gradle
+        run: |
+          cd ConfigServer
+          chmod +x ../gradlew
+          ../gradlew build -x test
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./ConfigServer
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/config-server:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/config-server:latest

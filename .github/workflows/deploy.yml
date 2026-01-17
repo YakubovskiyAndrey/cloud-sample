@@ -1,0 +1,116 @@
+name: Deploy to GKE
+
+on:
+  workflow_run:
+    workflows: ["Build and Push Docker Images"]
+    types: [completed]
+    branches: [main, master]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Image tag to deploy (default: latest)'
+        required: false
+        default: 'latest'
+
+env:
+  GKE_PROJECT: ${{ secrets.GKE_PROJECT }}
+  GKE_CLUSTER: ${{ secrets.GKE_CLUSTER }}
+  GKE_ZONE: ${{ secrets.GKE_ZONE }}
+  REGISTRY: ghcr.io
+
+jobs:
+  deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GKE_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.GKE_PROJECT }}
+
+      - name: Configure kubectl
+        run: |
+          gcloud container clusters get-credentials ${{ env.GKE_CLUSTER }} \
+            --zone ${{ env.GKE_ZONE }} \
+            --project ${{ env.GKE_PROJECT }}
+
+      - name: Set up Kustomize
+        run: |
+          curl -sfLo kustomize.tar.gz https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.3.0/kustomize_v5.3.0_linux_amd64.tar.gz
+          tar xzf kustomize.tar.gz
+          chmod +x kustomize
+          sudo mv kustomize /usr/local/bin/
+
+      - name: Determine image tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "tag=${{ github.event.inputs.image_tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${{ github.event.workflow_run.head_sha }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Update image versions
+        run: |
+          cd kustomize
+          kustomize edit set image \
+            auth-service=${{ env.REGISTRY }}/${{ github.repository_owner }}/auth-service:${{ steps.tag.outputs.tag }} \
+            user-service=${{ env.REGISTRY }}/${{ github.repository_owner }}/user-service:${{ steps.tag.outputs.tag }} \
+            config-server=${{ env.REGISTRY }}/${{ github.repository_owner }}/config-server:${{ steps.tag.outputs.tag }}
+
+      - name: Create namespace if not exists
+        run: |
+          kubectl create namespace cloud-demo --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Create secrets if not exist
+        run: |
+          # PostgreSQL secret
+          if ! kubectl get secret postgresql-secret -n cloud-demo &> /dev/null; then
+            kubectl create secret generic postgresql-secret \
+              --from-literal=username=postgres \
+              --from-literal=password="${{ secrets.POSTGRES_PASSWORD }}" \
+              -n cloud-demo
+          fi
+
+          # MongoDB secret
+          if ! kubectl get secret mongodb-secret -n cloud-demo &> /dev/null; then
+            kubectl create secret generic mongodb-secret \
+              --from-literal=username=admin \
+              --from-literal=password="${{ secrets.MONGO_PASSWORD }}" \
+              -n cloud-demo
+          fi
+
+          # Config server secret
+          if ! kubectl get secret config-server-secret -n cloud-demo &> /dev/null; then
+            kubectl create secret generic config-server-secret \
+              --from-literal=git-token="${{ secrets.CONFIG_GIT_TOKEN }}" \
+              -n cloud-demo
+          fi
+
+      - name: Deploy to GKE
+        run: |
+          kubectl apply -k kustomize/
+
+      - name: Wait for rollout
+        run: |
+          kubectl rollout status deployment/auth -n cloud-demo --timeout=300s || true
+          kubectl rollout status deployment/user -n cloud-demo --timeout=300s || true
+
+      - name: Get service URLs
+        run: |
+          echo "=== Deployed Services ==="
+          kubectl get services -n cloud-demo
+          echo ""
+          echo "=== Pod Status ==="
+          kubectl get pods -n cloud-demo
