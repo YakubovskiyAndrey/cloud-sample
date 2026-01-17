@@ -12,3 +12,16 @@ spring:
       password: ${MONGO_PASSWORD:admin}
       database: ${MONGO_DATABASE:UserProfileDB}
       authentication-database: admin
+
+
+# --- ACTUATOR CONFIGURATION ---
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info  # включаем только нужные эндпоинты
+  endpoint:
+    health:
+      show-details: always     # показываем детали health
+  server:
+    port: 9091

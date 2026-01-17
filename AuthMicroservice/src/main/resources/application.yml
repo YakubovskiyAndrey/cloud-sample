@@ -12,3 +12,15 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+
+# --- ACTUATOR CONFIGURATION ---
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info  # включаем только нужные эндпоинты
+  endpoint:
+    health:
+      show-details: always     # показываем детали health
+  server:
+    port: 9090
