@@ -60,8 +60,7 @@ jobs:
           cd kustomize
           kustomize edit set image \
             auth-service=${{ env.REGISTRY }}/${{ github.repository_owner }}/auth-service:${{ steps.tag.outputs.tag }} \
-            user-service=${{ env.REGISTRY }}/${{ github.repository_owner }}/user-service:${{ steps.tag.outputs.tag }} \
-            config-server=${{ env.REGISTRY }}/${{ github.repository_owner }}/config-server:${{ steps.tag.outputs.tag }}
+            user-service=${{ env.REGISTRY }}/${{ github.repository_owner }}/user-service:${{ steps.tag.outputs.tag }}
 
       - name: Create namespace if not exists
         run: |
@@ -82,13 +81,6 @@ jobs:
             kubectl create secret generic mongodb-secret \
               --from-literal=username=admin \
               --from-literal=password="${{ secrets.MONGO_PASSWORD }}" \
-              -n cloud-demo
-          fi
-
-          # Config server secret
-          if ! kubectl get secret config-server-secret -n cloud-demo &> /dev/null; then
-            kubectl create secret generic config-server-secret \
-              --from-literal=git-token="${{ secrets.CONFIG_GIT_TOKEN }}" \
               -n cloud-demo
           fi
 

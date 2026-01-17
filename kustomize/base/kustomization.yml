@@ -13,6 +13,5 @@ resources:
   - mongodb
 
   # Сервіси
-  - config-server
   - auth
   - user

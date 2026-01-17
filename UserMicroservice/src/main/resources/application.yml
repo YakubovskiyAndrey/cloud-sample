@@ -1,8 +1,14 @@
+server:
+  port: 9091
+
 spring:
-  cloud:
-    config:
-      uri: http://service-loadbalancer-config:8888
-  config:
-    import: "configserver:"
   application:
-    name: user-application
+    name: user-service
+  data:
+    mongodb:
+      host: ${MONGO_HOST:localhost}
+      port: ${MONGO_PORT:27017}
+      username: ${MONGO_USERNAME:admin}
+      password: ${MONGO_PASSWORD:admin}
+      database: ${MONGO_DATABASE:UserProfileDB}
+      authentication-database: admin

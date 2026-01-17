@@ -1,8 +1,14 @@
+server:
+  port: 9090
+
 spring:
-  cloud:
-    config:
-      uri: http://service-loadbalancer-config:8888
-  config:
-    import: "configserver:"
   application:
-    name: auth-application
+    name: auth-service
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:AuthDB}
+  jpa:
+    hibernate:
+      ddl-auto: update

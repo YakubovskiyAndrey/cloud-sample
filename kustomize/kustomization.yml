@@ -12,6 +12,3 @@ images:
   - name: user-service
     newName: ghcr.io/yakubovskiyandrey/user-service
     newTag: latest
-  - name: config-server
-    newName: ghcr.io/yakubovskiyandrey/config-server
-    newTag: latest

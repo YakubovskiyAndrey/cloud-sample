@@ -2,4 +2,3 @@ rootProject.name = 'cloud'
 
 include 'AuthMicroservice'
 include 'UserMicroservice'
-include 'ConfigServer'
