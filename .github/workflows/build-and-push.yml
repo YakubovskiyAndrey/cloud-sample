@@ -73,14 +73,18 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set image prefix lowercase
+        id: prefix
+        run: echo "value=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: ./AuthMicroservice
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/auth-service:${{ github.sha }}
-            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/auth-service:latest
+            ${{ env.REGISTRY }}/${{ steps.prefix.outputs.value }}/auth-service:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ steps.prefix.outputs.value }}/auth-service:latest
 
   build-user:
     needs: detect-changes
@@ -111,11 +115,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set image prefix lowercase
+        id: prefix
+        run: echo "value=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: ./UserMicroservice
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/user-service:${{ github.sha }}
-            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/user-service:latest
+            ${{ env.REGISTRY }}/${{ steps.prefix.outputs.value }}/user-service:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ steps.prefix.outputs.value }}/user-service:latest
