@@ -1,20 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: user
+  name: task
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: user
+      app: task
   template:
     metadata:
       labels:
-        app: user
+        app: task
     spec:
       containers:
-        - name: user
-          image: user-service:latest
+        - name: task
+          image: task-service:latest
           resources:
             limits:
               memory: "2048Mi"
@@ -23,33 +23,37 @@ spec:
               memory: "512Mi"
               cpu: "200m"
           ports:
-            - containerPort: 9091
+            - containerPort: 9090
           env:
-            - name: MONGO_HOST
-              value: "mongodb"
-            - name: MONGO_PORT
-              value: "27017"
-            - name: MONGO_DATABASE
-              value: "UserDB"
-            - name: MONGO_USERNAME
+            - name: DB_HOST
+              value: "postgresql"
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              value: "TaskDB"
+            - name: DB_USERNAME
               valueFrom:
                 secretKeyRef:
-                  name: mongodb-secret
+                  name: postgresql-secret
                   key: username
-            - name: MONGO_PASSWORD
+            - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: mongodb-secret
+                  name: postgresql-secret
                   key: password
+            - name: USER_SERVICE_HOST
+              value: "user"
+            - name: USER_SERVICE_PORT
+              value: "9091"
           readinessProbe:
             httpGet:
               path: /actuator/health
-              port: 9091
+              port: 9090
             initialDelaySeconds: 30
             periodSeconds: 10
           livenessProbe:
             httpGet:
               path: /actuator/health
-              port: 9091
+              port: 9090
             initialDelaySeconds: 60
             periodSeconds: 30

@@ -18,7 +18,6 @@ POSTGRES_USER="${POSTGRES_USER:-postgres}"
 POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-$(openssl rand -base64 16)}"
 MONGO_USER="${MONGO_USER:-admin}"
 MONGO_PASSWORD="${MONGO_PASSWORD:-$(openssl rand -base64 16)}"
-GIT_TOKEN="${GIT_TOKEN:-}"
 
 # PostgreSQL Secret
 echo "Створюю postgresql-secret..."
@@ -33,14 +32,6 @@ kubectl create secret generic mongodb-secret \
   --from-literal=username="$MONGO_USER" \
   --from-literal=password="$MONGO_PASSWORD" \
   --dry-run=client -o yaml | kubectl apply -f -
-
-# Config Server Secret (якщо потрібен GitHub token)
-if [ -n "$GIT_TOKEN" ]; then
-  echo "Створюю config-server-secret..."
-  kubectl create secret generic config-server-secret \
-    --from-literal=git-token="$GIT_TOKEN" \
-    --dry-run=client -o yaml | kubectl apply -f -
-fi
 
 echo ""
 echo "=== Секрети створено ==="

@@ -1,4 +1,5 @@
 rootProject.name = 'cloud'
 
-include 'AuthMicroservice'
-include 'UserMicroservice'
+include 'gke-api-gateway'
+include 'gke-api-task'
+include 'gke-api-user'

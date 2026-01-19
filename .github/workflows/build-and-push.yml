@@ -4,12 +4,13 @@ on:
   push:
     branches: [main, master]
     paths:
-      - 'AuthMicroservice/**'
-      - 'UserMicroservice/**'
+      - 'gke-api-gateway/**'
+      - 'gke-api-task/**'
+      - 'gke-api-user/**'
   workflow_dispatch:
     inputs:
       service:
-        description: 'Service to build (auth, user, all)'
+        description: 'Service to build (gateway, task, user, all)'
         required: true
         default: 'all'
 
@@ -21,7 +22,8 @@ jobs:
   detect-changes:
     runs-on: ubuntu-latest
     outputs:
-      auth: ${{ steps.changes.outputs.auth }}
+      gateway: ${{ steps.changes.outputs.gateway }}
+      task: ${{ steps.changes.outputs.task }}
       user: ${{ steps.changes.outputs.user }}
     steps:
       - uses: actions/checkout@v4
@@ -32,21 +34,24 @@ jobs:
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
             case "${{ github.event.inputs.service }}" in
               all)
-                echo "auth=true" >> $GITHUB_OUTPUT
+                echo "gateway=true" >> $GITHUB_OUTPUT
+                echo "task=true" >> $GITHUB_OUTPUT
                 echo "user=true" >> $GITHUB_OUTPUT
                 ;;
-              auth) echo "auth=true" >> $GITHUB_OUTPUT ;;
+              gateway) echo "gateway=true" >> $GITHUB_OUTPUT ;;
+              task) echo "task=true" >> $GITHUB_OUTPUT ;;
               user) echo "user=true" >> $GITHUB_OUTPUT ;;
             esac
           else
             git diff --name-only HEAD~1 HEAD > changed_files.txt || echo "" > changed_files.txt
-            grep -q "AuthMicroservice" changed_files.txt && echo "auth=true" >> $GITHUB_OUTPUT || true
-            grep -q "UserMicroservice" changed_files.txt && echo "user=true" >> $GITHUB_OUTPUT || true
+            grep -q "gke-api-gateway" changed_files.txt && echo "gateway=true" >> $GITHUB_OUTPUT || true
+            grep -q "gke-api-task" changed_files.txt && echo "task=true" >> $GITHUB_OUTPUT || true
+            grep -q "gke-api-user" changed_files.txt && echo "user=true" >> $GITHUB_OUTPUT || true
           fi
 
-  build-auth:
+  build-gateway:
     needs: detect-changes
-    if: needs.detect-changes.outputs.auth == 'true'
+    if: needs.detect-changes.outputs.gateway == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -62,9 +67,8 @@ jobs:
 
       - name: Build with Gradle
         run: |
-          cd AuthMicroservice
-          chmod +x ../gradlew
-          ../gradlew build -x test
+          chmod +x ./gradlew
+          ./gradlew :gke-api-gateway:build -x test
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
@@ -80,11 +84,52 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: ./AuthMicroservice
+          context: ./gke-api-gateway
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ steps.prefix.outputs.value }}/auth-service:${{ github.sha }}
-            ${{ env.REGISTRY }}/${{ steps.prefix.outputs.value }}/auth-service:latest
+            ${{ env.REGISTRY }}/${{ steps.prefix.outputs.value }}/gateway-service:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ steps.prefix.outputs.value }}/gateway-service:latest
+
+  build-task:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.task == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'corretto'
+
+      - name: Build with Gradle
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :gke-api-task:build -x test
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set image prefix lowercase
+        id: prefix
+        run: echo "value=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./gke-api-task
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ steps.prefix.outputs.value }}/task-service:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ steps.prefix.outputs.value }}/task-service:latest
 
   build-user:
     needs: detect-changes
@@ -104,9 +149,8 @@ jobs:
 
       - name: Build with Gradle
         run: |
-          cd UserMicroservice
-          chmod +x ../gradlew
-          ../gradlew build -x test
+          chmod +x ./gradlew
+          ./gradlew :gke-api-user:build -x test
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
@@ -122,7 +166,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: ./UserMicroservice
+          context: ./gke-api-user
           push: true
           tags: |
             ${{ env.REGISTRY }}/${{ steps.prefix.outputs.value }}/user-service:${{ github.sha }}

@@ -1,45 +1,42 @@
 plugins {
 	id 'java'
-	id 'application'
-	id 'org.springframework.boot' version '3.3.1'
-	id 'io.spring.dependency-management' version '1.1.6'
+	id 'org.springframework.boot' version '3.3.1' apply false
+	id 'io.spring.dependency-management' version '1.1.6' apply false
 }
+
 allprojects {
-	apply plugin: 'java'
-	apply plugin: 'application'
-	apply plugin: 'org.springframework.boot'
-	apply plugin: 'io.spring.dependency-management'
-	apply plugin: 'java-library'
 	apply from: "${rootDir}/dependencies.gradle"
-}
-subprojects {
-	group = 'com.yakubovskyi'
-	version = 'v.0.1'
-	java{
-		sourceCompatibility = JavaVersion.VERSION_21
-		targetCompatibility = JavaVersion.VERSION_21
-	}
-	tasks.withType(JavaCompile).tap {
-		configureEach {
-			options.encoding = 'UTF-8'
-		}
-	}
-}
-allprojects {
 	repositories {
 		mavenCentral()
 		google()
 	}
-	dependencies {
-		implementation libs.springBootStarterWeb
-		implementation libs.swaggerui
+}
+
+subprojects {
+	apply plugin: 'java'
+	apply plugin: 'java-library'
+	apply plugin: 'org.springframework.boot'
+	apply plugin: 'io.spring.dependency-management'
+
+	group = 'com.yakubovskyi'
+	version = 'v.0.1'
+
+	java {
+		sourceCompatibility = JavaVersion.VERSION_21
+		targetCompatibility = JavaVersion.VERSION_21
 	}
-	test{
+
+	tasks.withType(JavaCompile).configureEach {
+		options.encoding = 'UTF-8'
+	}
+
+	test {
 		useJUnitPlatform()
 	}
-}
-configurations {
-	compileOnly{
-		extendsFrom annotationProcessor
+
+	configurations {
+		compileOnly {
+			extendsFrom annotationProcessor
+		}
 	}
 }

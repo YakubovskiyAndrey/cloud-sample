@@ -49,7 +49,6 @@ jobs:
       - name: Determine image tag
         id: tag
         run: |
-          # Конвертуємо owner в lowercase для Docker
           OWNER_LC=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           echo "owner=${OWNER_LC}" >> $GITHUB_OUTPUT
 
@@ -63,7 +62,8 @@ jobs:
         run: |
           cd kustomize
           kustomize edit set image \
-            auth-service=${{ env.REGISTRY }}/${{ steps.tag.outputs.owner }}/auth-service:${{ steps.tag.outputs.tag }} \
+            gateway-service=${{ env.REGISTRY }}/${{ steps.tag.outputs.owner }}/gateway-service:${{ steps.tag.outputs.tag }} \
+            task-service=${{ env.REGISTRY }}/${{ steps.tag.outputs.owner }}/task-service:${{ steps.tag.outputs.tag }} \
             user-service=${{ env.REGISTRY }}/${{ steps.tag.outputs.owner }}/user-service:${{ steps.tag.outputs.tag }}
 
       - name: Create namespace if not exists
@@ -90,7 +90,10 @@ jobs:
 
       - name: Cleanup old resources
         run: |
-          # Видаляємо config-server якщо існує
+          # Remove old auth service if exists
+          kubectl delete deployment auth -n cloud-demo --ignore-not-found
+          kubectl delete service auth -n cloud-demo --ignore-not-found
+          # Remove config-server if exists
           kubectl delete deployment config-server -n cloud-demo --ignore-not-found
           kubectl delete service config-server -n cloud-demo --ignore-not-found
 
@@ -100,7 +103,8 @@ jobs:
 
       - name: Wait for rollout
         run: |
-          kubectl rollout status deployment/auth -n cloud-demo --timeout=90s || true
+          kubectl rollout status deployment/gateway -n cloud-demo --timeout=90s || true
+          kubectl rollout status deployment/task -n cloud-demo --timeout=90s || true
           kubectl rollout status deployment/user -n cloud-demo --timeout=90s || true
 
       - name: Get service URLs
