@@ -6,5 +6,7 @@ dependencies {
     implementation libs.springBootActuator
 
     testImplementation libs.springBootStarterTest
-    testImplementation libs.embedMongo
+
+    testImplementation libs.testcontainersMongo
+    testImplementation libs.testcontainersJunit
 }
