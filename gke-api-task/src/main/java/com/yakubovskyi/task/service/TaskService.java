@@ -38,29 +38,20 @@ public class TaskService {
     }
 
     public TaskResponseDto getTaskById(Long id) {
-        Task task = taskRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Task not found with id: " + id));
+        Task task = byIdOrThrow(id);
         return mapToResponse(task);
     }
 
     public TaskWithUserResponseDto getTaskWithUser(Long id) {
-        Task task = taskRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Task not found with id: " + id));
+        Task task = byIdOrThrow(id);
+        UserResponseDto user = userManager.getUserById(task.getUserId());
+        return mapToResponse(task, user);
+    }
 
-        UserResponseDto user = null;
-        try {
-            user = userManager.getUserById(task.getUserId());
-        } catch (Exception e) {
-            // User service might be unavailable
-        }
-
-        return TaskWithUserResponseDto.builder()
-                .id(task.getId())
-                .userId(task.getUserId())
-                .title(task.getTitle())
-                .status(task.getStatus())
-                .user(user)
-                .build();
+    private Task byIdOrThrow(Long id) {
+        return taskRepository.findById(id)
+                .orElseThrow(() ->
+                        new RuntimeException("Task not found with id: " + id));
     }
 
     public List<TaskResponseDto> getTasksByUserId(String userId) {
@@ -70,18 +61,14 @@ public class TaskService {
     }
 
     public TaskResponseDto updateTaskStatus(Long id, UpdateTaskStatusRequestDto request) {
-        Task task = taskRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Task not found with id: " + id));
+        Task task = byIdOrThrow(id);
         task.setStatus(request.getStatus());
         Task updatedTask = taskRepository.save(task);
         return mapToResponse(updatedTask);
     }
 
     public void deleteTask(Long id) {
-        if (!taskRepository.existsById(id)) {
-            throw new RuntimeException("Task not found with id: " + id);
-        }
-        taskRepository.deleteById(id);
+        taskRepository.delete(byIdOrThrow(id));
     }
 
     private TaskResponseDto mapToResponse(Task task) {
@@ -90,6 +77,16 @@ public class TaskService {
                 .userId(task.getUserId())
                 .title(task.getTitle())
                 .status(task.getStatus())
+                .build();
+    }
+
+    private TaskWithUserResponseDto mapToResponse(Task task, UserResponseDto user) {
+        return TaskWithUserResponseDto.builder()
+                .id(task.getId())
+                .userId(task.getUserId())
+                .title(task.getTitle())
+                .status(task.getStatus())
+                .user(user)
                 .build();
     }
 }

@@ -6,4 +6,7 @@ dependencies {
     annotationProcessor libs.lombok
     implementation libs.springCloudStarterOpenFeign
     implementation libs.springBootActuator
+
+    testImplementation libs.springBootStarterTest
+    testRuntimeOnly libs.h2Database
 }

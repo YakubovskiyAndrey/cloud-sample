@@ -36,7 +36,7 @@ spec:
                   name: postgresql-secret
                   key: password
             - name: POSTGRES_DB
-              value: "AuthDB"
+              value: "TaskDB"
             - name: PGDATA
               value: /var/lib/postgresql/data/pgdata
           volumeMounts:

@@ -1,11 +1,13 @@
 ext {
 
     versions = [
-            springBoot : '3.3.1',
-            springCloud: '4.1.3',
-            postgreSQL : '42.7.3',
-            lombok     : '1.18.34',
-            actuator   : '3.3.1'
+            springBoot      : '3.3.1',
+            springCloud     : '4.1.3',
+            postgreSQL      : '42.7.3',
+            lombok          : '1.18.34',
+            actuator        : '3.3.1',
+            embedMongo      : '4.14.0',
+            h2              : '2.2.224'
     ]
 
     libs = [
@@ -16,7 +18,10 @@ ext {
             springBootDataMongo        : "org.springframework.boot:spring-boot-starter-data-mongodb:${versions.springBoot}",
             postgreSQL                 : "org.postgresql:postgresql:${versions.postgreSQL}",
             lombok                     : "org.projectlombok:lombok:${versions.lombok}",
-            springBootActuator         : "org.springframework.boot:spring-boot-starter-actuator:${versions.actuator}"
+            springBootActuator         : "org.springframework.boot:spring-boot-starter-actuator:${versions.actuator}",
+            springBootStarterTest      : "org.springframework.boot:spring-boot-starter-test:${versions.springBoot}",
+            embedMongo                 : "de.flapdoodle.embed:de.flapdoodle.embed.mongo:${versions.embedMongo}",
+            h2Database                 : "com.h2database:h2:${versions.h2}"
     ]
 
 }

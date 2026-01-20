@@ -106,10 +106,13 @@ jobs:
           java-version: '21'
           distribution: 'corretto'
 
-      - name: Build with Gradle
+      - name: Run tests
         run: |
           chmod +x ./gradlew
-          ./gradlew :gke-api-task:build -x test
+          ./gradlew :gke-api-task:test
+
+      - name: Build with Gradle
+        run: ./gradlew :gke-api-task:build -x test
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
@@ -147,10 +150,13 @@ jobs:
           java-version: '21'
           distribution: 'corretto'
 
-      - name: Build with Gradle
+      - name: Run tests
         run: |
           chmod +x ./gradlew
-          ./gradlew :gke-api-user:build -x test
+          ./gradlew :gke-api-user:test
+
+      - name: Build with Gradle
+        run: ./gradlew :gke-api-user:build -x test
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
