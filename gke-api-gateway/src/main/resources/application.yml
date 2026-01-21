@@ -8,6 +8,19 @@ spring:
     web-application-type: reactive
   cloud:
     gateway:
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: "http://localhost:3000"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - PATCH
+              - DELETE
+              - OPTIONS
+            allowedHeaders: "*"
+            allowCredentials: true
       routes:
         - id: task-service
           uri: http://${TASK_SERVICE_HOST:localhost}:${TASK_SERVICE_PORT:9090}

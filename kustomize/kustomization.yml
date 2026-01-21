@@ -6,9 +6,15 @@ resources:
 
 # Версії образів - оновлюються через CI/CD
 images:
-  - name: auth-service
-    newName: ghcr.io/yakubovskiyandrey/auth-service
+  - name: gateway-service
+    newName: ghcr.io/yakubovskiyandrey/gateway-service
+    newTag: latest
+  - name: task-service
+    newName: ghcr.io/yakubovskiyandrey/task-service
     newTag: latest
   - name: user-service
     newName: ghcr.io/yakubovskiyandrey/user-service
+    newTag: latest
+  - name: frontend-service
+    newName: ghcr.io/yakubovskiyandrey/cloud-fe-sample
     newTag: latest
