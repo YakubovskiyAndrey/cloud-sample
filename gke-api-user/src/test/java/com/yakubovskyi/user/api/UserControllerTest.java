@@ -63,6 +63,7 @@ class UserControllerTest {
     void createUser_Success() throws Exception {
         CreateUserRequestDto request = CreateUserRequestDto.builder()
                 .name("John Doe")
+                .email("john@example.com")
                 .build();
 
         mvc.perform(post(API_URL)
@@ -70,11 +71,13 @@ class UserControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.name").value("John Doe"))
+                .andExpect(jsonPath("$.email").value("john@example.com"))
                 .andExpect(jsonPath("$.id").isNotEmpty());
 
         List<User> users = mongoTemplate.findAll(User.class);
         assertThat(users).hasSize(1);
         assertThat(users.get(0).getName()).isEqualTo("John Doe");
+        assertThat(users.get(0).getEmail()).isEqualTo("john@example.com");
     }
 
     @Test
@@ -101,21 +104,23 @@ class UserControllerTest {
     @Test
     @DisplayName("Should get user by id")
     void getUserById_Success() throws Exception {
-        User savedUser = mongoTemplate.save(User.builder().name("Test User").build());
+        User savedUser = mongoTemplate.save(User.builder().name("Test User").email("test@example.com").build());
 
         mvc.perform(get(API_URL + "/{id}", savedUser.getId()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(savedUser.getId()))
-                .andExpect(jsonPath("$.name").value("Test User"));
+                .andExpect(jsonPath("$.name").value("Test User"))
+                .andExpect(jsonPath("$.email").value("test@example.com"));
     }
 
     @Test
     @DisplayName("Should update user successfully")
     void updateUser_Success() throws Exception {
-        User savedUser = mongoTemplate.save(User.builder().name("Old Name").build());
+        User savedUser = mongoTemplate.save(User.builder().name("Old Name").email("old@example.com").build());
 
         CreateUserRequestDto updateRequest = CreateUserRequestDto.builder()
                 .name("New Name")
+                .email("new@example.com")
                 .build();
 
         mvc.perform(put(API_URL + "/{id}", savedUser.getId())
@@ -123,11 +128,13 @@ class UserControllerTest {
                         .content(objectMapper.writeValueAsString(updateRequest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(savedUser.getId()))
-                .andExpect(jsonPath("$.name").value("New Name"));
+                .andExpect(jsonPath("$.name").value("New Name"))
+                .andExpect(jsonPath("$.email").value("new@example.com"));
 
         User updatedUser = mongoTemplate.findById(savedUser.getId(), User.class);
         assertThat(updatedUser).isNotNull();
         assertThat(updatedUser.getName()).isEqualTo("New Name");
+        assertThat(updatedUser.getEmail()).isEqualTo("new@example.com");
     }
 
     @Test

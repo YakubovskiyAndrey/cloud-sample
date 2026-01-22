@@ -11,4 +11,5 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CreateUserRequestDto {
     private String name;
+    private String email;
 }

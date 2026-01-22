@@ -9,6 +9,7 @@ import com.yakubovskyi.task.entity.Task;
 import com.yakubovskyi.task.entity.TaskStatus;
 import com.yakubovskyi.task.manager.UserManager;
 import com.yakubovskyi.task.repository.TaskRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -51,7 +52,7 @@ public class TaskService {
     private Task byIdOrThrow(Long id) {
         return taskRepository.findById(id)
                 .orElseThrow(() ->
-                        new RuntimeException("Task not found with id: " + id));
+                        new EntityNotFoundException("Task not found with id: " + id));
     }
 
     public List<TaskResponseDto> getTasksByUserId(String userId) {

@@ -18,6 +18,7 @@ public class UserService {
     public UserResponseDto createUser(CreateUserRequestDto request) {
         User user = User.builder()
                 .name(request.getName())
+                .email(request.getEmail())
                 .build();
         User savedUser = userRepository.save(user);
         return mapToResponse(savedUser);
@@ -30,30 +31,33 @@ public class UserService {
     }
 
     public UserResponseDto getUserById(String id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+        User user = byIdOrThrow(id);
         return mapToResponse(user);
     }
 
+    private User byIdOrThrow(String id) {
+        return userRepository.findById(id)
+                .orElseThrow(() ->
+                        new RuntimeException("User not found with id: " + id));
+    }
+
     public UserResponseDto updateUser(String id, CreateUserRequestDto request) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+        User user = byIdOrThrow(id);
         user.setName(request.getName());
+        user.setEmail(request.getEmail());
         User updatedUser = userRepository.save(user);
         return mapToResponse(updatedUser);
     }
 
     public void deleteUser(String id) {
-        if (!userRepository.existsById(id)) {
-            throw new RuntimeException("User not found with id: " + id);
-        }
-        userRepository.deleteById(id);
+        userRepository.delete(byIdOrThrow(id));
     }
 
     private UserResponseDto mapToResponse(User user) {
         return UserResponseDto.builder()
                 .id(user.getId())
                 .name(user.getName())
+                .email(user.getEmail())
                 .build();
     }
 }
