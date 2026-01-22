@@ -13,10 +13,16 @@ on:
         description: 'Service to build (gateway, task, user, all)'
         required: true
         default: 'all'
+      skip_deploy:
+        description: 'Skip deployment trigger'
+        required: false
+        default: 'false'
+        type: boolean
 
 env:
   REGISTRY: ghcr.io
   IMAGE_PREFIX: ${{ github.repository_owner }}
+  DEPLOY_REPO: ${{ github.repository_owner }}/cloud-sample-deployment
 
 jobs:
   detect-changes:
@@ -177,3 +183,44 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/${{ steps.prefix.outputs.value }}/user-service:${{ github.sha }}
             ${{ env.REGISTRY }}/${{ steps.prefix.outputs.value }}/user-service:latest
+
+  # Trigger deployment in separate infrastructure repository
+  trigger-deploy:
+    needs: [detect-changes, build-gateway, build-task, build-user]
+    if: |
+      always() &&
+      (needs.build-gateway.result == 'success' || needs.build-task.result == 'success' || needs.build-user.result == 'success') &&
+      github.event.inputs.skip_deploy != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine built services
+        id: services
+        run: |
+          SERVICES=""
+          if [ "${{ needs.detect-changes.outputs.gateway }}" == "true" ] && [ "${{ needs.build-gateway.result }}" == "success" ]; then
+            SERVICES="gateway"
+          fi
+          if [ "${{ needs.detect-changes.outputs.task }}" == "true" ] && [ "${{ needs.build-task.result }}" == "success" ]; then
+            [ -n "$SERVICES" ] && SERVICES="$SERVICES," || true
+            SERVICES="${SERVICES}task"
+          fi
+          if [ "${{ needs.detect-changes.outputs.user }}" == "true" ] && [ "${{ needs.build-user.result }}" == "success" ]; then
+            [ -n "$SERVICES" ] && SERVICES="$SERVICES," || true
+            SERVICES="${SERVICES}user"
+          fi
+          echo "services=$SERVICES" >> $GITHUB_OUTPUT
+          echo "Built services: $SERVICES"
+
+      - name: Trigger deployment
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.DEPLOY_REPO_TOKEN }}
+          repository: ${{ env.DEPLOY_REPO }}
+          event-type: deploy
+          client-payload: |
+            {
+              "services": "${{ steps.services.outputs.services }}",
+              "tag": "${{ github.sha }}",
+              "source_repo": "${{ github.repository }}",
+              "commit_message": "${{ github.event.head_commit.message }}"
+            }
