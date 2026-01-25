@@ -19,6 +19,10 @@ Gateway (8080) ─┬─► Task Service (9090) ─► PostgreSQL
 
 ### 1. Start Databases
 
+> **Note:** This project does not include Dockerfiles for databases. You can either run them via Docker using official images or install locally.
+
+#### Option A: Docker (recommended)
+
 ```bash
 # PostgreSQL
 docker run -d --name postgres \
@@ -36,11 +40,16 @@ docker run -d --name mongodb \
   mongo:7
 ```
 
-Or use Docker Compose:
+#### Option B: Local Installation
 
-```bash
-docker-compose up -d postgres mongodb
-```
+Install databases manually:
+
+- **PostgreSQL 15+**: [postgresql.org/download](https://www.postgresql.org/download/)
+  - Create database `TaskDB`
+  - User: `postgres`, Password: `master`
+
+- **MongoDB 7+**: [mongodb.com/try/download](https://www.mongodb.com/try/download/community)
+  - User: `admin`, Password: `admin`
 
 ### 2. Start Services
 
@@ -80,7 +89,5 @@ curl http://localhost:8080/api/tasks
 cloud/
 ├── gke-api-gateway/    # Spring Cloud Gateway (port 8080)
 ├── gke-api-task/       # Task Service (port 9090, PostgreSQL)
-├── gke-api-user/       # User Service (port 9091, MongoDB)
-├── kustomize/          # Kubernetes manifests
-└── docker-compose.yml
+└── gke-api-user/       # User Service (port 9091, MongoDB)
 ```
