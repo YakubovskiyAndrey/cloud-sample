@@ -222,7 +222,7 @@ jobs:
           client-payload: |
             {
               "services": "${{ steps.services.outputs.services }}",
-              "tag": "${{ github.sha }}",
+              "tag": "latest",
               "source_repo": "${{ github.repository }}",
               "commit_message": "${{ github.event.head_commit.message }}"
             }
